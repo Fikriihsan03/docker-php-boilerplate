@@ -1,0 +1,61 @@
+version: "3.3"
+services:
+  app:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    privileged: true
+    image: web
+    container_name: web-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/vendor/ 
+    env_file:
+      - .env
+    networks:
+      - graelok-network
+
+  #database container
+  web_db:
+    image: mariadb:10.6
+    container_name: web-db-service
+    volumes:
+      - web-db-service:/var/lib/mysql
+    restart: unless-stopped
+    tty: true
+
+    environment:
+      MYSQL_DATABASE: mydb
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_PASSWORD: root
+      MYSQL_USER: root
+
+    networks:
+      - graelok-network
+
+  webserver:
+    image: nginx:stable
+    container_name: webserver
+    restart: unless-stopped
+    volumes:
+      - .:/var/www/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - graelok-network
+    ports:
+      - "9005:80"
+    depends_on:
+      - app
+      - web_db
+
+networks:
+  uat-network:
+    driver: bridge
+    name: graelok-network
+
+volumes:
+  graelok-db-service:
+    driver: local
+    name: graelok-db-service-vol
